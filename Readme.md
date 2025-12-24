@@ -286,17 +286,21 @@ The package automatically handles responses at `/kpayment/response`. The respons
 **Note:** The ResponseController uses `udf1` for success URL and `udf2` for error URL if provided, otherwise it will try to redirect to routes that you need to create in your application.
 
 ```php
+// In your EventServiceProvider (app/Providers/EventServiceProvider.php)
+use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Greelogix\KPayment\Events\PaymentStatusUpdated;
 
-// In your EventServiceProvider (app/Providers/EventServiceProvider.php)
-protected $listen = [
-    PaymentStatusUpdated::class => [
-        // Your listeners here
-        \App\Listeners\ProcessKnetPayment::class,
-    ],
-];
+class EventServiceProvider extends ServiceProvider
+{
+    protected $listen = [
+        PaymentStatusUpdated::class => [
+            // Your listeners here
+            \App\Listeners\ProcessKnetPayment::class,
+        ],
+    ];
+}
 
-// Example Listener
+// Example Listener (app/Listeners/ProcessKnetPayment.php)
 namespace App\Listeners;
 
 use Greelogix\KPayment\Events\PaymentStatusUpdated;
@@ -307,7 +311,8 @@ class ProcessKnetPayment
     {
         $payment = $event->payment;
         
-        if ($payment->isSuccessful()) {
+        // Always check if payment exists
+        if ($payment && $payment->isSuccessful()) {
             // Handle successful payment
             // Update order status, send confirmation email, etc.
         } else {
@@ -343,6 +348,7 @@ try {
 Similar to MyFatoorah, you can show payment methods to users and redirect to KNET with a selected method:
 
 ```php
+use Illuminate\Http\Request;
 use Greelogix\KPayment\Facades\KPayment;
 use Greelogix\KPayment\Models\PaymentMethod;
 
@@ -396,10 +402,25 @@ if ($payment && $payment->isSuccessful()) {
 // Get payment by transaction ID
 $payment = KPayment::getPaymentByTransId('TRANS123456');
 
+// Always check if payment exists before using it
+if ($payment) {
+    // Use payment object
+    if ($payment->isSuccessful()) {
+        // Payment successful
+    }
+}
+
 // Query payments
 $successfulPayments = KnetPayment::successful()->get();
 $failedPayments = KnetPayment::failed()->get();
 $pendingPayments = KnetPayment::pending()->get();
+
+// Always check if collection is not empty
+if ($successfulPayments->isNotEmpty()) {
+    foreach ($successfulPayments as $payment) {
+        // Process successful payment
+    }
+}
 
 // Get active payment methods for platform
 $iosMethods = PaymentMethod::activeForPlatform('ios')->get();
@@ -416,10 +437,15 @@ $response = request()->all();
 
 if (KPayment::validateResponse($response)) {
     // Response is valid, process it
-    $payment = KPayment::processResponse($response);
-    
-    if ($payment->isSuccessful()) {
-        // Payment successful
+    try {
+        $payment = KPayment::processResponse($response);
+        
+        if ($payment && $payment->isSuccessful()) {
+            // Payment successful
+        }
+    } catch (\Greelogix\KPayment\Exceptions\KnetException $e) {
+        // Handle exception (invalid hash, payment not found, etc.)
+        // Log error or handle invalid response
     }
 } else {
     // Invalid response hash
