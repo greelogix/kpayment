@@ -226,8 +226,8 @@ try {
         'currency' => '414', // 414 = KWD
         'language' => 'EN', // EN or AR
         'payment_method_code' => 'VISA', // Optional: Pre-select payment method (KNET, VISA, MASTERCARD, APPLE_PAY, KFAST)
-        'response_url' => route('kpayment.response'), // Optional, uses default from settings
-        'error_url' => route('kpayment.error'), // Optional, uses default from settings
+        'response_url' => url('/kpayment/response'), // Optional, uses default from settings
+        'error_url' => url('/payment/error'), // Optional, uses default from settings - create this route in your app
         'udf1' => 'Custom data 1', // Optional UDF fields
         'udf2' => 'Custom data 2',
         'udf3' => 'Custom data 3',
@@ -277,18 +277,44 @@ Create a view file `resources/views/payment/knet-form.blade.php`:
 
 ### Handle Payment Response
 
-The package automatically handles responses at `/kpayment/response`. You can customize the success/error handling in the `ResponseController` or listen to the `PaymentStatusUpdated` event:
+The package automatically handles responses at `/kpayment/response`. The response controller will redirect to success/error URLs based on payment status. You can customize the success/error handling by:
+
+1. **Creating your own success/error routes** in your application
+2. **Listening to the `PaymentStatusUpdated` event** to handle payment status changes
+3. **Customizing the ResponseController** (publish and modify if needed)
+
+**Note:** The ResponseController uses `udf1` for success URL and `udf2` for error URL if provided, otherwise it will try to redirect to routes that you need to create in your application.
 
 ```php
 use Greelogix\KPayment\Events\PaymentStatusUpdated;
 
-// In your EventServiceProvider
+// In your EventServiceProvider (app/Providers/EventServiceProvider.php)
 protected $listen = [
     PaymentStatusUpdated::class => [
         // Your listeners here
         \App\Listeners\ProcessKnetPayment::class,
     ],
 ];
+
+// Example Listener
+namespace App\Listeners;
+
+use Greelogix\KPayment\Events\PaymentStatusUpdated;
+
+class ProcessKnetPayment
+{
+    public function handle(PaymentStatusUpdated $event)
+    {
+        $payment = $event->payment;
+        
+        if ($payment->isSuccessful()) {
+            // Handle successful payment
+            // Update order status, send confirmation email, etc.
+        } else {
+            // Handle failed payment
+        }
+    }
+}
 ```
 
 ### Process Refund
@@ -304,7 +330,7 @@ try {
     ]);
 
     // Handle refund result
-    if ($refundResult['result'] === 'CAPTURED') {
+    if (isset($refundResult['result']) && $refundResult['result'] === 'CAPTURED') {
         // Refund successful
     }
 } catch (\Greelogix\KPayment\Exceptions\KnetException $e) {
@@ -342,8 +368,8 @@ public function processPayment(Request $request)
         'amount' => $request->amount,
         'track_id' => 'ORDER-' . time(),
         'payment_method_code' => $request->payment_method_code, // Pre-select method
-        'response_url' => route('payment.success'),
-        'error_url' => route('payment.error'),
+        'response_url' => url('/kpayment/response'), // Package handles this automatically
+        'error_url' => url('/payment/error'), // Create this route in your app
     ]);
 
     return view('payment.knet-form', [
@@ -362,8 +388,8 @@ use Greelogix\KPayment\Models\PaymentMethod;
 // Get payment by track ID
 $payment = KPayment::getPaymentByTrackId('ORDER-12345');
 
-// Check payment status
-if ($payment->isSuccessful()) {
+// Check payment status (always check if payment exists)
+if ($payment && $payment->isSuccessful()) {
     // Payment successful
 }
 
@@ -391,8 +417,13 @@ $response = request()->all();
 if (KPayment::validateResponse($response)) {
     // Response is valid, process it
     $payment = KPayment::processResponse($response);
+    
+    if ($payment->isSuccessful()) {
+        // Payment successful
+    }
 } else {
     // Invalid response hash
+    // Log error or handle invalid response
 }
 ```
 
@@ -418,12 +449,26 @@ if (KPayment::validateResponse($response)) {
 
 The package automatically registers response routes:
 
-```
-POST /kpayment/response
-GET /kpayment/response
-```
+- `POST /kpayment/response` (route name: `kpayment.response`)
+- `GET /kpayment/response` (route name: `kpayment.response.get`)
 
 These routes are **CSRF exempt** and handle payment responses from KNET.
+
+**Important:** You should create your own success and error routes in your application. The ResponseController will redirect to:
+- Success URL: Uses `udf1` field if provided, or you need to create a `kpayment.success` route
+- Error URL: Uses `udf2` field if provided, or you need to create a `kpayment.error` route
+
+Example routes to add in your `routes/web.php`:
+
+```php
+Route::get('/payment/success', function () {
+    return view('payment.success');
+})->name('kpayment.success');
+
+Route::get('/payment/error', function () {
+    return view('payment.error');
+})->name('kpayment.error');
+```
 
 ### Response Parameters
 

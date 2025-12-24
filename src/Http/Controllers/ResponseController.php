@@ -4,6 +4,7 @@ namespace Greelogix\KPayment\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Route;
 use Greelogix\KPayment\Facades\KPayment;
 use Greelogix\KPayment\Events\PaymentStatusUpdated;
 use Greelogix\KPayment\Exceptions\KnetException;
@@ -46,7 +47,14 @@ class ResponseController extends Controller
     protected function handleSuccess($payment, array $response)
     {
         // You can customize this redirect URL
-        $successUrl = $payment->udf1 ?? route('kpayment.success');
+        // Priority: udf1 field > route > default URL
+        if (!empty($payment->udf1)) {
+            $successUrl = $payment->udf1;
+        } elseif (Route::has('kpayment.success')) {
+            $successUrl = route('kpayment.success');
+        } else {
+            $successUrl = url('/payment/success');
+        }
         
         return redirect($successUrl)->with([
             'payment' => $payment,
@@ -60,7 +68,14 @@ class ResponseController extends Controller
     protected function handleFailure($payment, array $response)
     {
         // You can customize this redirect URL
-        $errorUrl = $payment->udf2 ?? route('kpayment.error');
+        // Priority: udf2 field > route > default URL
+        if (!empty($payment->udf2)) {
+            $errorUrl = $payment->udf2;
+        } elseif (Route::has('kpayment.error')) {
+            $errorUrl = route('kpayment.error');
+        } else {
+            $errorUrl = url('/payment/error');
+        }
         
         return redirect($errorUrl)->with([
             'payment' => $payment,
@@ -73,7 +88,12 @@ class ResponseController extends Controller
      */
     protected function handleError($exception)
     {
-        $errorUrl = route('kpayment.error');
+        // Priority: route > default URL
+        if (Route::has('kpayment.error')) {
+            $errorUrl = route('kpayment.error');
+        } else {
+            $errorUrl = url('/payment/error');
+        }
         
         return redirect($errorUrl)->with([
             'error' => $exception->getMessage(),
