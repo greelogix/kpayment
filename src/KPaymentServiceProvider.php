@@ -18,20 +18,20 @@ class KPaymentServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton('kpayment', function ($app) {
-            // Get settings from site settings, fallback to config/env
-            $tranportalId = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_tranportal_id', config('kpayment.tranportal_id', ''));
-            $tranportalPassword = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_tranportal_password', config('kpayment.tranportal_password', ''));
-            $resourceKey = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_resource_key', config('kpayment.resource_key', ''));
-            $baseUrl = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_base_url', config('kpayment.base_url', 'https://kpaytest.com.kw/kpg/PaymentHTTP.htm'));
-            $testMode = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_test_mode', config('kpayment.test_mode', true));
-            $responseUrl = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_response_url', config('kpayment.response_url', ''));
-            $errorUrl = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_error_url', config('kpayment.error_url', ''));
-            $currency = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_currency', config('kpayment.currency', '414'));
-            $language = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_language', config('kpayment.language', 'EN'));
-            $kfastEnabled = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_kfast_enabled', config('kpayment.kfast_enabled', false));
-            $applePayEnabled = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_apple_pay_enabled', config('kpayment.apple_pay_enabled', false));
+            // Get settings from database only (no config/env fallbacks)
+            $tranportalId = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_tranportal_id', '');
+            $tranportalPassword = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_tranportal_password', '');
+            $resourceKey = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_resource_key', '');
+            $baseUrl = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_base_url', 'https://kpaytest.com.kw/kpg/PaymentHTTP.htm');
+            $testMode = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_test_mode', '1');
+            $responseUrl = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_response_url', '');
+            $errorUrl = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_error_url', '');
+            $currency = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_currency', '414');
+            $language = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_language', 'EN');
+            $kfastEnabled = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_kfast_enabled', '0');
+            $applePayEnabled = \Greelogix\KPayment\Models\SiteSetting::getValue('kpayment_apple_pay_enabled', '0');
             
-            // Convert test mode to boolean
+            // Convert to boolean
             $testMode = filter_var($testMode, FILTER_VALIDATE_BOOLEAN);
             $kfastEnabled = filter_var($kfastEnabled, FILTER_VALIDATE_BOOLEAN);
             $applePayEnabled = filter_var($applePayEnabled, FILTER_VALIDATE_BOOLEAN);

@@ -36,7 +36,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Greelogix\\KPayment\\": "src/"
+            "Greelogix\\KPayment\\": "src/",
+            "Greelogix\\KPayment\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "autoload-dev": {

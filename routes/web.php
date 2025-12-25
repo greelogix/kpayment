@@ -20,8 +20,12 @@ Route::middleware('web')->group(function () {
         // Settings routes (Full CRUD)
         Route::get('settings', [SiteSettingController::class, 'index'])->name('settings.index');
         Route::post('settings', [SiteSettingController::class, 'store'])->name('settings.store');
-        Route::put('settings/{key}', [SiteSettingController::class, 'update'])->name('settings.update');
-        Route::delete('settings/{key}', [SiteSettingController::class, 'destroy'])->name('settings.destroy');
+        Route::put('settings/{key}', [SiteSettingController::class, 'update'])
+            ->where('key', '[a-z0-9_]+')
+            ->name('settings.update');
+        Route::delete('settings/{key}', [SiteSettingController::class, 'destroy'])
+            ->where('key', '[a-z0-9_]+')
+            ->name('settings.destroy');
 
         // Payment methods routes (view only + toggle status)
         Route::get('payment-methods', [\Greelogix\KPayment\Http\Controllers\Admin\PaymentMethodController::class, 'index'])->name('payment-methods.index');

@@ -187,4 +187,3 @@ return [
     'payment_method_model' => \Greelogix\KPayment\Models\PaymentMethod::class,
 ];
 
-

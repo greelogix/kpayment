@@ -120,4 +120,3 @@ class DefaultSettingsSeeder extends Seeder
         $this->command->info('Default KNET settings seeded successfully.');
     }
 }
-

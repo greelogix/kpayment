@@ -32,5 +32,3 @@ return new class extends Migration
         Schema::dropIfExists('kpayment_payment_methods');
     }
 };
-
-

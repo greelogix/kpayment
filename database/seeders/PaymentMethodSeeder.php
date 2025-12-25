@@ -80,4 +80,3 @@ class PaymentMethodSeeder extends Seeder
         $this->command->info('Payment methods seeded successfully.');
     }
 }
-
