@@ -5,6 +5,7 @@ namespace Greelogix\KPayment\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 use Greelogix\KPayment\Facades\KPayment;
 use Greelogix\KPayment\Events\PaymentStatusUpdated;
 use Greelogix\KPayment\Exceptions\KnetException;
@@ -19,6 +20,11 @@ class ResponseController extends Controller
         try {
             $response = $request->all();
             
+            // Log incoming response for debugging
+            Log::info('KNET Payment Response Received', [
+                'response' => $response,
+            ]);
+            
             // Process the response
             $payment = KPayment::processResponse($response);
             
@@ -26,18 +32,27 @@ class ResponseController extends Controller
             event(new PaymentStatusUpdated($payment));
             
             // Redirect based on payment status
-            if ($payment->isSuccessful()) {
+            if ($payment && $payment->isSuccessful()) {
                 return $this->handleSuccess($payment, $response);
             } else {
                 return $this->handleFailure($payment, $response);
             }
         } catch (KnetException $e) {
-            \Log::error('KNET Response Error', [
+            Log::error('KNET Response Error', [
                 'response' => $request->all(),
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             
             return $this->handleError($e);
+        } catch (\Exception $e) {
+            Log::error('KNET Response Unexpected Error', [
+                'response' => $request->all(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return $this->handleError(new KnetException(__('kpayment.response.unexpected_error')));
         }
     }
 
@@ -58,7 +73,7 @@ class ResponseController extends Controller
         
         return redirect($successUrl)->with([
             'payment' => $payment,
-            'message' => 'Payment completed successfully',
+            'message' => __('kpayment.response.success'),
         ]);
     }
 
@@ -79,7 +94,7 @@ class ResponseController extends Controller
         
         return redirect($errorUrl)->with([
             'payment' => $payment,
-            'message' => 'Payment failed',
+            'message' => __('kpayment.response.failed'),
         ]);
     }
 
@@ -95,8 +110,12 @@ class ResponseController extends Controller
             $errorUrl = url('/payment/error');
         }
         
+        $errorMessage = $exception instanceof KnetException 
+            ? $exception->getMessage() 
+            : __('kpayment.response.error');
+        
         return redirect($errorUrl)->with([
-            'error' => $exception->getMessage(),
+            'error' => $errorMessage,
         ]);
     }
 }

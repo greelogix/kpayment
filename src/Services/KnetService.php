@@ -150,17 +150,17 @@ class KnetService
     public function processResponse(array $response): KnetPayment
     {
         if (!$this->validateResponse($response)) {
-            throw new KnetException('Invalid payment response hash');
+            throw new KnetException(__('kpayment.response.invalid_hash'));
         }
 
         $trackId = $response['trackid'] ?? null;
         if (!$trackId) {
-            throw new KnetException('Track ID not found in response');
+            throw new KnetException(__('kpayment.response.track_id_not_found'));
         }
 
         $payment = KnetPayment::where('track_id', $trackId)->first();
         if (!$payment) {
-            throw new KnetException('Payment not found');
+            throw new KnetException(__('kpayment.response.payment_not_found'));
         }
 
         $status = $this->determineStatus($response);

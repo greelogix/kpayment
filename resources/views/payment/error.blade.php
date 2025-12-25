@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Error - KNET Payment</title>
+    <title>{{ __('kpayment.payment.error.title') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .error-container {
@@ -45,14 +45,14 @@
                     <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
                 </svg>
             </div>
-            <h1 class="mb-3">Payment Failed</h1>
+            <h1 class="mb-3">{{ __('kpayment.payment.error.heading') }}</h1>
             <p class="text-muted mb-4">
                 @if(session('error'))
                     {{ session('error') }}
                 @elseif(session('message'))
                     {{ session('message') }}
                 @else
-                    Your payment could not be processed. Please try again.
+                    {{ __('kpayment.payment.error.default_message') }}
                 @endif
             </p>
             
@@ -62,27 +62,27 @@
                 @endphp
                 <div class="card bg-light mb-4">
                     <div class="card-body text-start">
-                        <h6 class="card-title">Payment Details</h6>
+                        <h6 class="card-title">{{ __('kpayment.payment.error.details') }}</h6>
                         <hr>
                         @if($payment->track_id)
-                            <p class="mb-2"><strong>Order ID:</strong> {{ $payment->track_id }}</p>
+                            <p class="mb-2"><strong>{{ __('kpayment.payment.error.order_id') }}:</strong> {{ $payment->track_id }}</p>
                         @endif
                         @if($payment->trans_id)
-                            <p class="mb-2"><strong>Transaction ID:</strong> {{ $payment->trans_id }}</p>
+                            <p class="mb-2"><strong>{{ __('kpayment.payment.error.transaction_id') }}:</strong> {{ $payment->trans_id }}</p>
                         @endif
                         @if($payment->result)
-                            <p class="mb-2"><strong>Result:</strong> <span class="text-danger">{{ $payment->result }}</span></p>
+                            <p class="mb-2"><strong>{{ __('kpayment.payment.error.result') }}:</strong> <span class="text-danger">{{ $payment->result }}</span></p>
                         @endif
                         @if($payment->amount)
-                            <p class="mb-0"><strong>Amount:</strong> {{ number_format($payment->amount, 3) }} {{ $payment->currency ?? 'KWD' }}</p>
+                            <p class="mb-0"><strong>{{ __('kpayment.payment.error.amount') }}:</strong> {{ number_format($payment->amount, 3) }} {{ $payment->currency ?? __('kpayment.common.currency.kwd') }}</p>
                         @endif
                     </div>
                 </div>
             @endif
             
             <div class="d-grid gap-2">
-                <a href="{{ url('/') }}" class="btn btn-primary btn-lg">Return to Home</a>
-                <a href="javascript:history.back()" class="btn btn-outline-secondary">Try Again</a>
+                <a href="{{ url('/') }}" class="btn btn-primary btn-lg">{{ __('kpayment.payment.error.return_home') }}</a>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary">{{ __('kpayment.payment.error.try_again') }}</a>
             </div>
         </div>
     </div>

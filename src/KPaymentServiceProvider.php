@@ -66,6 +66,9 @@ class KPaymentServiceProvider extends ServiceProvider
         // Load views (automatically loaded - accessible as 'kpayment::view.name')
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'kpayment');
 
+        // Load translations (automatically loaded - accessible as __('kpayment.key'))
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'kpayment');
+
         // Publishable assets (optional - only if user wants to customize)
         $this->publishes([
             __DIR__ . '/../config/kpayment.php' => config_path('kpayment.php'),
@@ -78,6 +81,10 @@ class KPaymentServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../resources/views' => resource_path('views/vendor/kpayment'),
         ], 'kpayment-views');
+
+        $this->publishes([
+            __DIR__ . '/../lang' => lang_path('vendor/kpayment'),
+        ], 'kpayment-lang');
     }
 }
 

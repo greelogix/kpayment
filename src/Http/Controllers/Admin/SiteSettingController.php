@@ -237,7 +237,7 @@ class SiteSettingController extends Controller
         });
 
         return redirect()->route('kpayment.admin.settings.index')
-            ->with('success', 'Settings updated successfully.');
+            ->with('success', __('kpayment.admin.settings.updated_successfully'));
     }
 
     /**
@@ -248,7 +248,7 @@ class SiteSettingController extends Controller
         // Validate key format
         if (!preg_match('/^[a-z0-9_]+$/', $key)) {
             return redirect()->route('kpayment.admin.settings.index')
-                ->with('error', 'Invalid setting key format.');
+                ->with('error', __('kpayment.admin.settings.invalid_key_format'));
         }
 
         $validated = $request->validate([
@@ -296,7 +296,7 @@ class SiteSettingController extends Controller
             $testUrl = 'https://kpaytest.com.kw';
             if (!empty($baseUrl) && strpos($baseUrl, $testUrl) !== false) {
                 return redirect()->route('kpayment.admin.settings.index')
-                    ->with('error', 'Cannot disable test mode while using test URL. Please update Base URL to production URL first: https://www.kpay.com.kw/kpg/PaymentHTTP.htm')
+                    ->with('error', __('kpayment.admin.settings.cannot_disable_test_mode'))
                     ->withInput();
             }
         }
@@ -309,13 +309,13 @@ class SiteSettingController extends Controller
             
             if ($testMode === '0' && strpos($value, $testUrl) !== false) {
                 return redirect()->route('kpayment.admin.settings.index')
-                    ->with('error', 'Cannot use test URL when test mode is disabled. Please use production URL: https://www.kpay.com.kw/kpg/PaymentHTTP.htm')
+                    ->with('error', __('kpayment.admin.settings.cannot_use_test_url'))
                     ->withInput();
             }
             
             if ($testMode === '1' && strpos($value, $productionUrl) !== false) {
                 return redirect()->route('kpayment.admin.settings.index')
-                    ->with('warning', 'You are using production URL while test mode is enabled. For production, disable test mode first.')
+                    ->with('warning', __('kpayment.admin.settings.production_url_warning'))
                     ->withInput();
             }
         }
@@ -333,7 +333,7 @@ class SiteSettingController extends Controller
         );
 
         return redirect()->route('kpayment.admin.settings.index')
-            ->with('success', 'Setting updated successfully.');
+            ->with('success', __('kpayment.admin.settings.setting_updated_successfully'));
     }
 
     /**
@@ -344,26 +344,26 @@ class SiteSettingController extends Controller
         // Validate key format
         if (!preg_match('/^[a-z0-9_]+$/', $key)) {
             return redirect()->route('kpayment.admin.settings.index')
-                ->with('error', 'Invalid setting key format.');
+                ->with('error', __('kpayment.admin.settings.invalid_key_format'));
         }
 
         // Prevent deletion of critical settings
         if (in_array($key, $this->protectedSettings)) {
             return redirect()->route('kpayment.admin.settings.index')
-                ->with('error', 'This setting cannot be deleted as it is critical for the package functionality.');
+                ->with('error', __('kpayment.admin.settings.cannot_delete_protected'));
         }
 
         $setting = SiteSetting::where('key', $key)->first();
 
         if (!$setting) {
             return redirect()->route('kpayment.admin.settings.index')
-                ->with('error', 'Setting not found.');
+                ->with('error', __('kpayment.admin.settings.setting_not_found'));
         }
 
         $setting->delete();
 
         return redirect()->route('kpayment.admin.settings.index')
-            ->with('success', 'Setting deleted successfully.');
+            ->with('success', __('kpayment.admin.settings.setting_deleted_successfully'));
     }
 
     /**

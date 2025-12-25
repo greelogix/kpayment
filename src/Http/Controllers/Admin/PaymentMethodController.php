@@ -33,7 +33,7 @@ class PaymentMethodController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Status updated successfully.',
+            'message' => __('kpayment.admin.payment_methods.status_updated_successfully'),
             'status' => $paymentMethod->{$request->field},
         ]);
     }
