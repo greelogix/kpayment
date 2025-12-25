@@ -8,6 +8,11 @@ return [
     |
     | Your KNET tranportal ID provided by your acquiring bank.
     |
+    | IMPORTANT: For TEST MODE, this can be left empty. KNET test environment
+    | does not require credentials for testing.
+    |
+    | For PRODUCTION, this is REQUIRED and must be provided by your acquiring bank.
+    |
     | NOTE: This is a fallback value. The actual value should be configured
     | in the admin panel at /admin/kpayment/settings
     | Settings in admin panel take priority over this value.
@@ -22,6 +27,11 @@ return [
     |
     | Your KNET tranportal password provided by your acquiring bank.
     |
+    | IMPORTANT: For TEST MODE, this can be left empty. KNET test environment
+    | does not require credentials for testing.
+    |
+    | For PRODUCTION, this is REQUIRED and must be provided by your acquiring bank.
+    |
     | NOTE: This is a fallback value. Configure in admin panel for production use.
     |
     */
@@ -33,6 +43,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Your KNET resource key for payment processing.
+    |
+    | IMPORTANT: For TEST MODE, this can be left empty. KNET test environment
+    | does not require credentials for testing.
+    |
+    | For PRODUCTION, this is REQUIRED and must be provided by your acquiring bank.
     |
     | NOTE: This is a fallback value. Configure in admin panel for production use.
     |
@@ -59,6 +74,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Set to true for test mode, false for production.
+    |
+    | IMPORTANT: In test mode, KNET does NOT require any credentials
+    | (Tranportal ID, Password, or Resource Key). You can test payments
+    | without configuring these fields.
     |
     | NOTE: This is a fallback value. Configure in admin panel for production use.
     |
@@ -167,4 +186,5 @@ return [
     */
     'payment_method_model' => \Greelogix\KPayment\Models\PaymentMethod::class,
 ];
+
 

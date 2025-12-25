@@ -22,21 +22,21 @@ class DefaultSettingsSeeder extends Seeder
                 'value' => config('kpayment.tranportal_id', ''),
                 'type' => 'text',
                 'group' => 'api',
-                'description' => 'KNET Tranportal ID (Provided by your acquiring bank)',
+                'description' => 'KNET Tranportal ID (Not required for testing. Required for production - provided by your acquiring bank)',
             ],
             [
                 'key' => 'kpayment_tranportal_password',
                 'value' => config('kpayment.tranportal_password', ''),
                 'type' => 'password',
                 'group' => 'api',
-                'description' => 'KNET Tranportal Password (Provided by your acquiring bank)',
+                'description' => 'KNET Tranportal Password (Not required for testing. Required for production - provided by your acquiring bank)',
             ],
             [
                 'key' => 'kpayment_resource_key',
                 'value' => config('kpayment.resource_key', ''),
                 'type' => 'password',
                 'group' => 'api',
-                'description' => 'KNET Resource Key (Provided by your acquiring bank)',
+                'description' => 'KNET Resource Key (Not required for testing. Required for production - provided by your acquiring bank)',
             ],
             [
                 'key' => 'kpayment_base_url',
@@ -50,7 +50,7 @@ class DefaultSettingsSeeder extends Seeder
                 'value' => config('kpayment.test_mode', true) ? '1' : '0',
                 'type' => 'boolean',
                 'group' => 'api',
-                'description' => 'Test Mode (Yes for testing, No for production)',
+                'description' => 'Test Mode (Yes for testing - no credentials required, No for production - credentials required)',
             ],
             [
                 'key' => 'kpayment_response_url',
@@ -120,4 +120,5 @@ class DefaultSettingsSeeder extends Seeder
         $this->command->info('Default KNET settings seeded successfully.');
     }
 }
+
 

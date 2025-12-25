@@ -112,9 +112,9 @@ php artisan db:seed --class="Greelogix\KPayment\Database\Seeders\DefaultSettings
 ```
 
 This will populate default KNET settings:
-- Tranportal ID (empty - to be configured)
-- Tranportal Password (empty - to be configured)
-- Resource Key (empty - to be configured)
+- Tranportal ID (empty - not required for testing)
+- Tranportal Password (empty - not required for testing)
+- Resource Key (empty - not required for testing)
 - Base URL (test URL)
 - Test Mode: enabled
 - Currency: 414 (KWD)
@@ -122,7 +122,10 @@ This will populate default KNET settings:
 - KFAST: disabled
 - Apple Pay: disabled
 
-**Note:** Settings will also be automatically created when you first visit the admin settings page.
+**Note:** 
+- **For Testing:** KNET test environment does NOT require any credentials (Tranportal ID, Password, or Resource Key). You can test payments without configuring these fields.
+- **For Production:** You must configure all credentials provided by your acquiring bank.
+- Settings will also be automatically created when you first visit the admin settings page.
 
 ### Step 4: Configure Settings in Admin Panel
 
@@ -136,9 +139,15 @@ This will populate default KNET settings:
    ```
 
 3. **Configure your settings:**
-   - **Tranportal ID:** Provided by your acquiring bank
-   - **Tranportal Password:** Provided by your acquiring bank
-   - **Resource Key:** Provided by your acquiring bank
+   - **Tranportal ID:** 
+     - **Test Mode:** Leave empty (not required for testing)
+     - **Production:** Provided by your acquiring bank (required)
+   - **Tranportal Password:** 
+     - **Test Mode:** Leave empty (not required for testing)
+     - **Production:** Provided by your acquiring bank (required)
+   - **Resource Key:** 
+     - **Test Mode:** Leave empty (not required for testing)
+     - **Production:** Provided by your acquiring bank (required)
    - **Base URL:** 
      - Test: `https://kpaytest.com.kw/kpg/PaymentHTTP.htm`
      - Production: `https://www.kpay.com.kw/kpg/PaymentHTTP.htm`
@@ -529,9 +538,12 @@ The package fires the following event when payment status is updated:
 
 ### Test Mode
 
+**Important:** KNET test environment does NOT require any credentials or API keys for testing.
+
 1. Set **Test Mode** to `true` in admin panel (`/admin/kpayment/settings`)
-2. Use test credentials from your acquiring bank
+2. **Leave credentials empty** (Tranportal ID, Password, and Resource Key can be empty for testing)
 3. Use test base URL: `https://kpaytest.com.kw/kpg/PaymentHTTP.htm`
+4. You can test the payment flow without any credentials
 
 ### Test Cards
 
