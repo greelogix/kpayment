@@ -57,9 +57,16 @@ class KPaymentServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Load migrations
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        
+        // Load routes (automatically loaded - no need to publish)
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
+        // Load views (automatically loaded - accessible as 'kpayment::view.name')
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'kpayment');
+
+        // Publishable assets (optional - only if user wants to customize)
         $this->publishes([
             __DIR__ . '/../config/kpayment.php' => config_path('kpayment.php'),
         ], 'kpayment-config');
@@ -71,8 +78,6 @@ class KPaymentServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../resources/views' => resource_path('views/vendor/kpayment'),
         ], 'kpayment-views');
-
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'kpayment');
     }
 }
 

@@ -233,7 +233,17 @@ This will create the following payment methods:
 
 ### Step 6: Verify Installation
 
-1. **Check routes are registered:**
+**Routes and views are automatically loaded from the package** - no need to publish them unless you want to customize.
+
+1. **Clear all caches (important after installation):**
+   ```bash
+   php artisan route:clear
+   php artisan view:clear
+   php artisan config:clear
+   php artisan cache:clear
+   ```
+
+2. **Check routes are registered:**
    ```bash
    php artisan route:list | grep kpayment
    ```
@@ -242,14 +252,25 @@ This will create the following payment methods:
    - `POST /kpayment/response` - Payment response handler
    - `GET /kpayment/response` - Payment response handler (GET)
    - `GET /admin/kpayment/settings` - Admin settings page
+   - `POST /admin/kpayment/settings` - Save settings
    - `GET /admin/kpayment/payment-methods` - Payment methods management
 
-2. **Visit admin settings page:**
+   **If routes don't appear:**
+   - Run `php artisan package:discover`
+   - Check `vendor/greelogix/kpayment-laravel/src/KPaymentServiceProvider.php` exists
+   - Verify package is in `composer.json`
+
+3. **Visit admin settings page:**
    ```
    http://your-app.test/admin/kpayment/settings
    ```
+   
+   **If page doesn't load:**
+   - Ensure you're logged in (admin routes require `auth` middleware)
+   - Check `storage/logs/laravel.log` for errors
+   - Verify views exist: `vendor/greelogix/kpayment-laravel/resources/views/admin/settings/index.blade.php`
 
-3. **Check database tables:**
+4. **Check database tables:**
    ```bash
    php artisan tinker
    >>> \Greelogix\KPayment\Models\SiteSetting::count()
@@ -297,16 +318,22 @@ php artisan db:seed --class="Greelogix\KPayment\Database\Seeders\DefaultSettings
 php artisan db:seed --class="Greelogix\KPayment\Database\Seeders\PaymentMethodSeeder"
 
 # 7. Clear cache
-php artisan config:clear && php artisan cache:clear && php artisan route:clear
+php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear
 ```
 
 **That's it!** The package is now installed and ready to use. No code changes needed in the package itself.
+
+**Important Notes:**
+- **Routes are automatically loaded** - No need to publish routes. They're available immediately after installation.
+- **Views are automatically loaded** - Views are accessible as `kpayment::admin.settings.index`. No need to publish unless you want to customize them.
+- **To customize views**, run: `php artisan vendor:publish --tag=kpayment-views`
 
 **Troubleshooting Installation:**
 - If `composer require` fails with "package not found", ensure the repository is added to `composer.json` first
 - Save `composer.json` after adding the repository
 - For private repos, ensure SSH key is added to GitHub or configure token authentication
 - If seeder classes are not found, run `composer dump-autoload` after installation
+- If routes/views don't work, run `php artisan package:discover` and clear all caches
 
 ## Configuration Priority
 
@@ -792,15 +819,19 @@ If you get "Target class does not exist" error when running seeders:
 
 ### Routes Not Working / Admin Pages Not Showing
 
+**Important:** Routes and views are automatically loaded from the package - you don't need to publish them unless you want to customize them.
+
 1. **Check package is discovered:**
    ```bash
    php artisan package:discover
    ```
 
-2. **Clear route cache:**
+2. **Clear all caches:**
    ```bash
    php artisan route:clear
-   php artisan route:cache
+   php artisan view:clear
+   php artisan config:clear
+   php artisan cache:clear
    ```
 
 3. **Verify authentication is configured** (admin routes require `auth` middleware)
@@ -809,6 +840,47 @@ If you get "Target class does not exist" error when running seeders:
    ```bash
    php artisan route:list | grep kpayment
    ```
+   
+   You should see:
+   - `GET|POST /kpayment/response`
+   - `GET /admin/kpayment/settings`
+   - `POST /admin/kpayment/settings`
+   - `GET /admin/kpayment/payment-methods`
+
+5. **If routes still not showing, manually register the service provider** in `config/app.php`:
+   ```php
+   'providers' => [
+       // ...
+       Greelogix\KPayment\KPaymentServiceProvider::class,
+   ],
+   ```
+
+### Views Not Loading
+
+**Views are automatically loaded from the package** and accessible as `kpayment::admin.settings.index`.
+
+If views are not loading:
+
+1. **Clear view cache:**
+   ```bash
+   php artisan view:clear
+   ```
+
+2. **Verify views exist in package:**
+   - Views are in `vendor/greelogix/kpayment-laravel/resources/views/`
+   - They're loaded with namespace `kpayment`
+
+3. **If you want to customize views, publish them:**
+   ```bash
+   php artisan vendor:publish --tag=kpayment-views
+   ```
+   This will copy views to `resources/views/vendor/kpayment/` where you can customize them.
+
+4. **Check for view errors:**
+   ```bash
+   tail -f storage/logs/laravel.log
+   ```
+   Then visit `/admin/kpayment/settings` and check for any view-related errors.
 
 ## Production Checklist
 
