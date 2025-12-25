@@ -85,6 +85,14 @@ class KPaymentServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../lang' => lang_path('vendor/kpayment'),
         ], 'kpayment-lang');
+
+        // Publish all KNET package assets at once
+        $this->publishes([
+            __DIR__ . '/../config/kpayment.php' => config_path('kpayment.php'),
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/kpayment'),
+            __DIR__ . '/../lang' => lang_path('vendor/kpayment'),
+        ], 'kpayment');
     }
 }
 

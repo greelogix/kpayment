@@ -97,13 +97,13 @@ The package will be automatically discovered by Laravel (auto-discovery is enabl
 - For private repos, ensure authentication is configured
 - Run `composer update` if needed
 
-### Step 3: Publish All Vendor Assets
+### Step 3: Publish Package Assets
 
 ```bash
-php artisan vendor:publish --all
+php artisan vendor:publish --tag=kpayment
 ```
 
-This will publish:
+This will publish all KNET package assets:
 - `config/kpayment.php` → `config/kpayment.php`
 - All views (admin + payment pages) → `resources/views/vendor/kpayment/`
 - All migrations → `database/migrations/`
@@ -249,8 +249,8 @@ composer require greelogix/kpayment-laravel:dev-main
 # 3. Dump autoload
 composer dump-autoload
 
-# 4. Publish all vendor assets
-php artisan vendor:publish --all
+# 4. Publish package assets
+php artisan vendor:publish --tag=kpayment
 
 # 5. Run migrations
 php artisan migrate
@@ -310,7 +310,7 @@ php artisan config:clear && php artisan cache:clear && php artisan route:clear &
    ]);
    ```
 
-   **Note:** The payment form view is included in the package at `kpayment::payment.form`. You can customize it by publishing views (`php artisan vendor:publish --all`) and editing `resources/views/vendor/kpayment/payment/form.blade.php`.
+   **Note:** The payment form view is included in the package at `kpayment::payment.form`. You can customize it by publishing views (`php artisan vendor:publish --tag=kpayment`) and editing `resources/views/vendor/kpayment/payment/form.blade.php`.
 
 3. **Payment response is automatically handled:**
    - Success → Redirects to `/payment/success`
@@ -510,8 +510,8 @@ If you get "Nothing to migrate" when running `php artisan migrate`:
 **You skipped the publish step!** You MUST publish assets first:
 
 ```bash
-# Publish all assets
-php artisan vendor:publish --all
+# Publish package assets
+php artisan vendor:publish --tag=kpayment
 
 # Then run migrations
 php artisan migrate
@@ -530,7 +530,7 @@ php artisan migrate
 
 2. **If migrations don't exist, publish again:**
    ```bash
-   php artisan vendor:publish --all --force
+   php artisan vendor:publish --tag=kpayment --force
    ```
 
 3. **Check package is installed:**
@@ -566,7 +566,7 @@ If you get "Target class does not exist" error when running seeders:
 
 3. **If you want to customize views, publish them:**
    ```bash
-   php artisan vendor:publish --all
+   php artisan vendor:publish --tag=kpayment
    ```
    This will copy views to `resources/views/vendor/kpayment/` where you can customize them.
 
