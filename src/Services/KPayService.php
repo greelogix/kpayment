@@ -171,14 +171,11 @@ class KPayService
         ];
 
         // Add credentials (required for production, optional for test)
-        // Note: In test mode, KNET may accept empty credentials, but we include them if provided
-        if (!empty($this->tranportalId)) {
-            $params['id'] = $this->tranportalId;
-        }
-
-        if (!empty($this->tranportalPassword)) {
-            $params['password'] = $this->tranportalPassword;
-        }
+        // Note: KNET requires 'id' and 'password' fields to be present in the form submission
+        // Even in test mode, these fields should be included (can be empty strings)
+        // However, empty values are excluded from hash calculation
+        $params['id'] = $this->tranportalId ?? '';
+        $params['password'] = $this->tranportalPassword ?? '';
 
         // Store selected payment method in UDF1 if provided
         if (isset($data['payment_method_code'])) {
@@ -667,6 +664,15 @@ class KPayService
         
         // Remove payment_id from form data (internal field, not for KNET)
         unset($formData['payment_id']);
+        
+        // Ensure 'id' and 'password' fields are present (required by KNET, even if empty)
+        // This handles cases where payment was created before these fields were always included
+        if (!isset($formData['id'])) {
+            $formData['id'] = $this->tranportalId ?? '';
+        }
+        if (!isset($formData['password'])) {
+            $formData['password'] = $this->tranportalPassword ?? '';
+        }
         
         // Validate required KNET parameters
         $requiredParams = ['action', 'amt', 'trackid', 'responseURL', 'errorURL', 'hash'];

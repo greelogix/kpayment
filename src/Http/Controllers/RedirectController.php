@@ -50,6 +50,23 @@ class RedirectController extends Controller
             // Get form data
             try {
                 $formData = KPay::getPaymentFormData($payment);
+                
+                // Log form data for debugging (without sensitive info)
+                if (config('kpay.log_requests', true)) {
+                    $logData = $formData;
+                    if (isset($logData['password'])) {
+                        $logData['password'] = '***';
+                    }
+                    if (isset($logData['hash'])) {
+                        $logData['hash'] = substr($logData['hash'], 0, 10) . '...';
+                    }
+                    Log::info('KPay Redirect: Form data prepared', [
+                        'payment_id' => $paymentId,
+                        'form_data_keys' => array_keys($formData),
+                        'form_data_safe' => $logData,
+                        'base_url' => KPay::getBaseUrl(),
+                    ]);
+                }
             } catch (KPayException $e) {
                 Log::error('KPay Redirect: Failed to get form data', [
                     'payment_id' => $paymentId,
@@ -68,6 +85,21 @@ class RedirectController extends Controller
                     'error' => $e->getMessage(),
                 ]);
                 return $this->renderError(Lang::get('kpay.redirect.gateway_config_error'), 500);
+            }
+            
+            // Validate form data has all required fields
+            $requiredFields = ['action', 'amt', 'trackid', 'responseURL', 'errorURL', 'hash'];
+            $missingFields = array_diff($requiredFields, array_keys($formData));
+            
+            if (!empty($missingFields)) {
+                Log::error('KPay Redirect: Missing required form fields', [
+                    'payment_id' => $paymentId,
+                    'missing_fields' => $missingFields,
+                    'available_fields' => array_keys($formData),
+                ]);
+                return $this->renderError(Lang::get('kpay.redirect.invalid_request_data', [
+                    'error' => 'Missing required fields: ' . implode(', ', $missingFields)
+                ]), 400);
             }
             
             // Render payment form for auto-submission to KNET
