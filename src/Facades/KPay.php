@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getPaymentMethods(string $platform = 'web')
  * @method static array generatePaymentForm(array $data)
  * @method static array generatePaymentUrl(array $data)
+ * @method static array generatePaymentRedirectUrl(array $data, ?string $redirectRoute = null)
  * @method static bool validateResponse(array $response)
  * @method static \Greelogix\KPay\Models\KPayPayment processResponse(array $response)
  * @method static array processRefund(array $data)

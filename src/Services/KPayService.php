@@ -245,6 +245,39 @@ class KPayService
     }
 
     /**
+     * Generate payment redirect URL
+     * Creates a URL in your app that will auto-submit the form to KNET
+     * This is useful for mobile apps or when you need a direct redirect URL
+     * 
+     * @param array $data Payment data (same as generatePaymentForm)
+     * @param string|null $redirectRoute Optional custom route name (default: kpay.redirect)
+     * @return array Contains redirect_url, payment_id, track_id, and form_data
+     * @throws KPayException
+     */
+    public function generatePaymentRedirectUrl(array $data, ?string $redirectRoute = null): array
+    {
+        $paymentData = $this->generatePaymentForm($data);
+        
+        // Remove payment_id from form_data (internal field, not for KNET)
+        $formData = $paymentData['form_data'];
+        unset($formData['payment_id']);
+        
+        // Generate redirect URL using payment_id as parameter
+        // The frontend can use this URL to auto-submit the form
+        $appUrl = \Illuminate\Support\Facades\Config::get('app.url', '');
+        $redirectUrl = rtrim($appUrl, '/') . '/kpay/redirect/' . $paymentData['payment_id'];
+        
+        return [
+            'redirect_url' => $redirectUrl,
+            'payment_url' => $paymentData['form_url'],
+            'payment_id' => $paymentData['payment_id'],
+            'track_id' => $paymentData['track_id'],
+            'form_data' => $formData,
+            'method' => 'POST',
+        ];
+    }
+
+    /**
      * Validate payment response
      * Validates the hash signature from KNET response
      */

@@ -268,6 +268,8 @@ return view('kpay::payment.form', [
 
 #### **For API Responses (JSON)**
 
+**Option 1: Return URL + Form Data (Frontend submits form)**
+
 ```php
 use Greelogix\KPay\Facades\KPay;
 
@@ -307,6 +309,47 @@ return response()->json([
     'data' => $paymentData,
 ]);
 ```
+
+**Option 2: Return Redirect URL (Auto-submits form - Recommended for Mobile Apps)**
+
+```php
+use Greelogix\KPay\Facades\KPay;
+
+// Generate redirect URL that auto-submits form
+$paymentData = KPay::generatePaymentRedirectUrl([
+    'amount' => 100.000,
+    'track_id' => 'ORDER-12345',
+    'currency' => '414',
+    'language' => 'EN',
+    'udf1' => 'ORDER-12345',
+]);
+
+// Returns:
+// [
+//     'redirect_url' => 'https://yoursite.com/kpay/redirect/1',  // Use this URL!
+//     'payment_url' => 'https://kpaytest.com.kw/kpg/PaymentHTTP.htm',
+//     'payment_id' => 1,
+//     'track_id' => 'ORDER-12345',
+//     'form_data' => [...],  // For reference
+//     'method' => 'POST',
+// ]
+
+// Return as JSON response
+return response()->json([
+    'success' => true,
+    'data' => [
+        'payment_url' => $paymentData['redirect_url'],  // Use redirect_url
+        'payment_id' => $paymentData['payment_id'],
+        'track_id' => $paymentData['track_id'],
+    ],
+]);
+```
+
+**Important:** 
+- `redirect_url` can be opened directly in browser/mobile app - it auto-submits the form
+- `payment_url` is the KNET gateway URL (requires POST with form data)
+- For mobile apps or direct links, use `redirect_url`
+- For web apps with custom form handling, use `payment_url` + `form_data`
 
 **Example API Controller:**
 
