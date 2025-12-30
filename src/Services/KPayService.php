@@ -150,13 +150,29 @@ class KPayService
             throw new KPayException('errorURL is required for KNET payment. Please set APP_URL in .env (auto-generated) or configure KPAY_ERROR_URL');
         }
 
-        // Ensure URLs are absolute
+        // Ensure URLs are absolute and valid
         if (!filter_var($responseUrl, FILTER_VALIDATE_URL)) {
             throw new KPayException('responseURL must be a valid absolute URL (e.g., https://yoursite.com/kpay/response)');
         }
 
         if (!filter_var($errorUrl, FILTER_VALIDATE_URL)) {
             throw new KPayException('errorURL must be a valid absolute URL (e.g., https://yoursite.com/kpay/response)');
+        }
+
+        // KNET requires HTTPS for response URLs (except for local testing)
+        if (strpos($responseUrl, 'http://') === 0 && strpos($responseUrl, 'localhost') === false && strpos($responseUrl, '127.0.0.1') === false) {
+            Log::warning('KPay: responseURL uses HTTP instead of HTTPS - KNET may reject this', [
+                'response_url' => $responseUrl,
+            ]);
+        }
+
+        // Validate URL format matches KNET requirements
+        // KNET expects responseURL to be accessible and return a valid response
+        if (strpos($responseUrl, '/kpay/response') === false) {
+            Log::warning('KPay: responseURL does not contain /kpay/response path', [
+                'response_url' => $responseUrl,
+                'note' => 'Ensure the route /kpay/response exists and is accessible',
+            ]);
         }
 
         // Reject localhost URLs - KNET servers cannot access them
@@ -187,15 +203,17 @@ class KPayService
             ]);
         }
 
-        // Build parameters according to KNET specification
+        // Build parameters according to KNET K-064 specification
+        // Parameter order matters for hash calculation (must be alphabetical)
+        // Parameter names must match KNET documentation exactly (case-sensitive)
         $params = [
-            'action' => $data['action'] ?? '1', // 1 = Purchase
-            'langid' => $data['language'] ?? $this->language,
-            'currencycode' => $data['currency'] ?? $this->currency,
-            'amt' => $amount,
-            'trackid' => $trackId,
-            'responseURL' => $responseUrl,
-            'errorURL' => $errorUrl,
+            'action' => $data['action'] ?? '1', // 1 = Purchase, 2 = Refund, 8 = Inquiry
+            'amt' => $amount, // Amount with exactly 3 decimal places
+            'currencycode' => $data['currency'] ?? $this->currency, // ISO currency code (414 = KWD)
+            'errorURL' => $errorUrl, // Case-sensitive: errorURL (not error_url)
+            'langid' => $data['language'] ?? $this->language, // EN or AR
+            'responseURL' => $responseUrl, // Case-sensitive: responseURL (not response_url)
+            'trackid' => $trackId, // Unique track ID (max 40 chars)
         ];
 
         // Add credentials (required for production, optional for test)
@@ -251,10 +269,24 @@ class KPayService
             'params_safe' => $logParams,
         ]);
 
-        // Generate hash (resource_key is required for hash generation)
-        // In test mode, if resource_key is empty, we still need to generate hash with empty string
+        // Generate hash according to KNET K-064 specification
+        // Hash = SHA256(resource_key + sorted_parameter_values)
+        // In test mode, resource_key can be empty (hash will be based on parameters only)
         $hashString = $this->generateHashString($params);
         $params['hash'] = $this->generateHash($hashString);
+        
+        // Log hash calculation for debugging (in test mode only)
+        if ($this->testMode && config('app.debug', false)) {
+            Log::debug('KPay: Hash calculation details', [
+                'resource_key_length' => strlen($this->resourceKey ?? ''),
+                'hash_string_length' => strlen($hashString),
+                'hash_string_preview' => substr($hashString, 0, 50) . '...',
+                'hash' => substr($params['hash'], 0, 20) . '...',
+                'params_in_hash' => array_keys(array_filter($params, function($v, $k) {
+                    return $k !== 'hash' && trim((string)$v) !== '';
+                }, ARRAY_FILTER_USE_BOTH)),
+            ]);
+        }
 
         // Create payment record within transaction for data integrity
         try {
@@ -549,20 +581,28 @@ class KPayService
     protected function generateHashString(array $params): string
     {
         // KNET hash format: resource_key + param1_value + param2_value + ... + paramN_value
-        // Parameters must be sorted alphabetically by key name
-        $hashString = $this->resourceKey;
+        // According to KNET K-064 documentation:
+        // 1. Start with resource_key (can be empty in test mode)
+        // 2. Sort parameters alphabetically by key name (case-sensitive)
+        // 3. Exclude 'hash' field from calculation
+        // 4. Exclude empty/null values from hash calculation
+        // 5. Concatenate values in sorted order
         
-        // Remove hash from params before sorting
+        $hashString = $this->resourceKey ?? '';
+        
+        // Remove hash from params before sorting (never include hash in hash calculation)
         unset($params['hash']);
         
-        // Sort parameters by key alphabetically (case-insensitive)
-        ksort($params, SORT_STRING | SORT_FLAG_CASE);
+        // Sort parameters by key alphabetically (case-sensitive sort as per KNET spec)
+        ksort($params, SORT_STRING);
         
-        // Concatenate parameter values in sorted order
+        // Concatenate parameter values in sorted order (only non-empty values)
         foreach ($params as $key => $value) {
-            // Only include non-empty values (KNET requirement)
-            if ($value !== null && $value !== '') {
-                $hashString .= (string)$value;
+            // Exclude empty, null, or whitespace-only values from hash calculation
+            // Convert to string and trim to handle edge cases
+            $stringValue = trim((string)$value);
+            if ($stringValue !== '') {
+                $hashString .= $stringValue;
             }
         }
 
