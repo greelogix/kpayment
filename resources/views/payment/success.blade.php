@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('kpay.payment.success.title') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    @if(app()->getLocale() === 'ar')
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    @endif
     <style>
         .success-container {
             min-height: 100vh;
@@ -52,7 +55,7 @@
                     $payment = session('payment');
                 @endphp
                 <div class="card bg-light mb-4">
-                    <div class="card-body text-start">
+                    <div class="card-body {{ app()->getLocale() === 'ar' ? 'text-end' : 'text-start' }}">
                         <h6 class="card-title">{{ __('kpay.payment.success.details') }}</h6>
                         <hr>
                         @if($payment->track_id)
