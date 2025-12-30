@@ -45,6 +45,14 @@ return [
         'unexpected_error' => 'An unexpected error occurred while processing payment response.',
     ],
 
+    // Redirect/Form Errors
+    'redirect' => [
+        'payment_not_found' => 'Payment not found (ID: :id). Please initiate payment again.',
+        'invalid_request_data' => 'Payment request data is invalid: :error',
+        'gateway_config_error' => 'Payment gateway configuration error.',
+        'processing_error' => 'An error occurred while processing your payment request: :error',
+    ],
+
     // Common
     'common' => [
         'currency' => [

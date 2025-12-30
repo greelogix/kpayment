@@ -207,16 +207,27 @@ return [
     */
     'payment_table' => env('KPAY_PAYMENT_TABLE', 'kpay_payments'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create Payment Table
-    |--------------------------------------------------------------------------
-    |
-    | Set to false if you want to use an existing table and skip migration.
-    | Set to true to create the payment table via migration.
-    |
-    */
-    'create_payment_table' => env('KPAY_CREATE_TABLE', true),
+           /*
+           |--------------------------------------------------------------------------
+           | Create Payment Table
+           |--------------------------------------------------------------------------
+           |
+           | Set to false if you want to use an existing table and skip migration.
+           | Set to true to create the payment table via migration.
+           |
+           */
+           'create_payment_table' => env('KPAY_CREATE_TABLE', true),
 
-];
+           /*
+           |--------------------------------------------------------------------------
+           | Log Requests
+           |--------------------------------------------------------------------------
+           |
+           | Enable/disable request logging for redirect and response routes.
+           | Set to false to disable logging (useful for high-traffic production).
+           |
+           */
+           'log_requests' => env('KPAY_LOG_REQUESTS', true),
+
+       ];
 

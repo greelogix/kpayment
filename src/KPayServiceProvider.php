@@ -62,7 +62,7 @@ class KPayServiceProvider extends ServiceProvider
     {
         // Load migrations
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        
+
         // Load routes (automatically loaded - no need to publish)
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 

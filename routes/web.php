@@ -4,15 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Greelogix\KPay\Http\Controllers\ResponseController;
 use Greelogix\KPay\Http\Controllers\RedirectController;
 
-// Health check route
-Route::get('kpay/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'package' => 'KPay',
-        'version' => '2.0.0',
-    ]);
-})->name('kpay.health');
-
 // Payment routes
 Route::middleware('web')->group(function () {
     // Payment response routes (CSRF exempt)
@@ -25,6 +16,7 @@ Route::middleware('web')->group(function () {
         ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
     // Payment redirect route - auto-submits form to KNET
+    // Note: This route is accessible without authentication for payment processing
     Route::get('kpay/redirect/{paymentId}', [RedirectController::class, 'redirect'])
         ->name('kpay.redirect');
 

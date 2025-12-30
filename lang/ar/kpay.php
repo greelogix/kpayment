@@ -45,6 +45,14 @@ return [
         'unexpected_error' => 'حدث خطأ غير متوقع أثناء معالجة استجابة الدفع.',
     ],
 
+    // Redirect/Form Errors
+    'redirect' => [
+        'payment_not_found' => 'لم يتم العثور على الدفعة (رقم: :id). يرجى بدء الدفع مرة أخرى.',
+        'invalid_request_data' => 'بيانات طلب الدفع غير صالحة: :error',
+        'gateway_config_error' => 'خطأ في إعدادات بوابة الدفع.',
+        'processing_error' => 'حدث خطأ أثناء معالجة طلب الدفع الخاص بك: :error',
+    ],
+
     // Common
     'common' => [
         'currency' => [

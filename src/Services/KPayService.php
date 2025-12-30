@@ -4,6 +4,7 @@ namespace Greelogix\KPay\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\DB;
 use Greelogix\KPay\Exceptions\KPayException;
 use Greelogix\KPay\Models\KPayPayment;
 
@@ -197,15 +198,49 @@ class KPayService
         $hashString = $this->generateHashString($params);
         $params['hash'] = $this->generateHash($hashString);
 
-        // Create payment record
-        $payment = KPayPayment::create([
-            'track_id' => $trackId,
-            'amount' => $amount,
-            'currency' => $params['currencycode'],
-            'payment_method' => $data['payment_method_code'] ?? null,
-            'status' => 'pending',
-            'request_data' => $params,
-        ]);
+        // Create payment record within transaction for data integrity
+        try {
+            DB::beginTransaction();
+            
+            // Check for duplicate track_id (prevent race conditions)
+            $existingPayment = KPayPayment::where('track_id', $trackId)->first();
+            if ($existingPayment && $existingPayment->status === 'pending') {
+                // If pending payment exists with same track_id, reuse it
+                Log::warning('KPay: Duplicate track_id detected, reusing existing payment', [
+                    'track_id' => $trackId,
+                    'existing_payment_id' => $existingPayment->id,
+                ]);
+                DB::rollBack();
+                $payment = $existingPayment;
+                // Update request_data if needed
+                $payment->update(['request_data' => $params]);
+            } else {
+                // Create new payment record
+                $payment = KPayPayment::create([
+                    'track_id' => $trackId,
+                    'amount' => $amount,
+                    'currency' => $params['currencycode'],
+                    'payment_method' => $data['payment_method_code'] ?? null,
+                    'status' => 'pending',
+                    'request_data' => $params,
+                ]);
+            }
+            
+            DB::commit();
+            
+            Log::info('KPay: Payment record created', [
+                'payment_id' => $payment->id,
+                'track_id' => $trackId,
+                'amount' => $amount,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('KPay: Failed to create payment record', [
+                'track_id' => $trackId,
+                'error' => $e->getMessage(),
+            ]);
+            throw new KPayException('Failed to create payment record: ' . $e->getMessage());
+        }
 
         $params['payment_id'] = $payment->id;
 
@@ -256,25 +291,57 @@ class KPayService
      */
     public function generatePaymentRedirectUrl(array $data, ?string $redirectRoute = null): array
     {
-        $paymentData = $this->generatePaymentForm($data);
-        
-        // Remove payment_id from form_data (internal field, not for KNET)
-        $formData = $paymentData['form_data'];
-        unset($formData['payment_id']);
-        
-        // Generate redirect URL using payment_id as parameter
-        // The frontend can use this URL to auto-submit the form
-        $appUrl = \Illuminate\Support\Facades\Config::get('app.url', '');
-        $redirectUrl = rtrim($appUrl, '/') . '/kpay/redirect/' . $paymentData['payment_id'];
-        
-        return [
-            'redirect_url' => $redirectUrl,
-            'payment_url' => $paymentData['form_url'],
-            'payment_id' => $paymentData['payment_id'],
-            'track_id' => $paymentData['track_id'],
-            'form_data' => $formData,
-            'method' => 'POST',
-        ];
+        try {
+            // Generate payment form data (creates payment record)
+            $paymentData = $this->generatePaymentForm($data);
+            
+            // Remove payment_id from form_data (internal field, not for KNET)
+            $formData = $paymentData['form_data'];
+            unset($formData['payment_id']);
+            
+            // Generate redirect URL using route helper if available, otherwise construct manually
+            try {
+                if (function_exists('route')) {
+                    $redirectUrl = route($redirectRoute ?? 'kpay.redirect', ['paymentId' => $paymentData['payment_id']]);
+                } else {
+                    throw new \Exception('route() helper not available');
+                }
+            } catch (\Exception $e) {
+                // Fallback to manual URL construction if route helper fails
+                $appUrl = Config::get('app.url', '');
+                if (empty($appUrl)) {
+                    throw new KPayException('APP_URL is required for redirect URL generation. Please set it in .env');
+                }
+                $redirectUrl = rtrim($appUrl, '/') . '/kpay/redirect/' . $paymentData['payment_id'];
+            }
+            
+            Log::info('KPay: Payment redirect URL generated', [
+                'payment_id' => $paymentData['payment_id'],
+                'track_id' => $paymentData['track_id'],
+                'redirect_url' => $redirectUrl,
+            ]);
+            
+            return [
+                'redirect_url' => $redirectUrl,
+                'payment_url' => $paymentData['form_url'],
+                'payment_id' => $paymentData['payment_id'],
+                'track_id' => $paymentData['track_id'],
+                'form_data' => $formData,
+                'method' => 'POST',
+            ];
+        } catch (KPayException $e) {
+            Log::error('KPay: Failed to generate redirect URL', [
+                'error' => $e->getMessage(),
+                'data' => $data,
+            ]);
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('KPay: Unexpected error generating redirect URL', [
+                'error' => $e->getMessage(),
+                'data' => $data,
+            ]);
+            throw new KPayException('Failed to generate payment redirect URL: ' . $e->getMessage());
+        }
     }
 
     /**
