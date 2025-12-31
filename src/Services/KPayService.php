@@ -251,6 +251,12 @@ class KPayService
         if (isset($logParams['password'])) {
             $logParams['password'] = '***';
         }
+        $urlParts = parse_url($finalUrl);
+        $queryParams = [];
+        if (isset($urlParts['query'])) {
+            parse_str($urlParts['query'], $queryParams);
+        }
+        
         Log::info('KPay: Payment form generated', [
             'track_id' => $trackId,
             'amount' => $amount,
@@ -267,6 +273,10 @@ class KPayService
             'param_string_preview' => substr($paramString, 0, 150) . '...',
             'has_id_in_param' => strpos($paramString, 'id=') !== false,
             'has_tranportal_id_in_trandata' => strpos($trandata, 'tranportalId=') !== false,
+            'url_has_tranportal_id_param' => isset($queryParams['tranportalId']),
+            'url_tranportal_id_value' => $queryParams['tranportalId'] ?? 'NOT_FOUND',
+            'url_has_response_url_param' => isset($queryParams['responseURL']),
+            'url_has_error_url_param' => isset($queryParams['errorURL']),
         ]);
 
         try {
