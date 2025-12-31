@@ -162,8 +162,7 @@ KPAY_RESOURCE_KEY=your_production_resource_key
 **What happens automatically:**
 - Base URL → `https://www.kpay.com.kw/kpg/PaymentHTTP.htm`
 - Response URL → `{APP_URL}/kpay/response`
-- Error URL → `{APP_URL}/kpay/response` (automatically included in payment request)
-- Resource Key → **REQUIRED** (must be provided - 16 bytes for AES-128-CBC)
+- Error URL → `{APP_URL}/kpay/response`
 - Credentials → Required (will throw error if missing)
 
 #### **Optional Overrides (only if needed):**
@@ -644,15 +643,6 @@ KPAY_TEST_MODE=true  # or false for production
 
 ### What Changed in Version 2.1.0
 
-**🔒 Major Updates:**
-- ✅ **AES-128-CBC encryption** implementation (replaces SHA256 hash - matches official KPAY reference code)
-- ✅ **Exact parameter ordering** as per SendPerformREQuest.php: `id&password&action&langid&currencycode&amt&responseURL&errorURL&trackid&udf1-udf5`
-- ✅ **Server-to-server callback handling** matching GetHandlerResponse.php pattern
-- ✅ **URL format** matches KPAY reference: `?param=paymentInit&trandata=ENCRYPTED&tranportalId=ID&responseURL=URL&errorURL=URL`
-- ✅ **Language code normalization** (USA/AR instead of EN/AR per KPAY requirements)
-- ✅ **Error URL validation** - Ensures errorURL is always included (fixes "Missing error url" error)
-- ✅ **Resource key management** - Default test key in service, production validation
-
 **✨ New Features:**
 - ✅ `generatePaymentRedirectUrl()` - Returns URL that auto-submits form (perfect for mobile apps)
 - ✅ Auto-managed URLs - Base URL automatically set based on `KPAY_TEST_MODE`
@@ -664,10 +654,8 @@ KPAY_TEST_MODE=true  # or false for production
 - ✅ Enhanced error handling and logging
 
 **⚠️ Breaking Changes:**
-- ⚠️ **Encryption method changed** from SHA256 hash to AES-128-CBC (matches official KPAY reference code)
-- ⚠️ **Language codes** now use `USA` instead of `EN` (auto-conversion supported for backward compatibility)
-- ⚠️ Response URLs are now **REQUIRED** (set `APP_URL` or configure manually)
-- ⚠️ Production mode validates credentials (throws error if missing)
+- Response URLs are now **REQUIRED** (set `APP_URL` or configure manually)
+- Production mode validates credentials (throws error if missing)
 
 **📝 No Database Changes:**
 - Existing payment records work as-is
@@ -810,41 +798,11 @@ curl -I https://your-ngrok-url.ngrok-free.app/kpay/response
 
 ### Encryption/Decryption Issues
 
-1. **Verify resource key is correct** in `.env`
-   - Test mode: Can be empty (uses default test key automatically)
-   - Production: Must be provided (16 bytes for AES-128-CBC)
-2. **Check parameter ordering** - Must be exact: `id&password&action&langid&currencycode&amt&responseURL&errorURL&trackid&udf1-udf5`
-3. **Ensure errorURL is included** - Both in encrypted parameters and trandata
-4. **Verify encryption matches KPAY spec** - AES-128-CBC with PKCS5 padding
-5. **Check logs** - Look for encryption/decryption errors in Laravel logs
-6. For server callbacks, ensure raw request body is being read correctly from `php://input`
-
-### "Missing error url" Error (IPAY0100001)
-
-If you see this error from KPAY:
-
-1. **Verify APP_URL is set** in `.env`:
-   ```env
-   APP_URL=https://yourdomain.com
-   ```
-
-2. **Check errorURL is being generated**:
-   ```bash
-   # Check Laravel logs
-   tail -f storage/logs/laravel.log | grep "error_url"
-   ```
-
-3. **Verify response and error URLs** are publicly accessible:
-   ```bash
-   curl -I https://yourdomain.com/kpay/response
-   ```
-
-4. **Ensure URLs are absolute** (not relative paths)
-
-The package automatically includes errorURL in both the encrypted parameters and the trandata string. If you still see this error, check that:
-- `APP_URL` is set correctly
-- URLs are publicly accessible (not localhost)
-- No firewall blocking KPAY servers
+1. Verify resource key is correct in `.env`
+2. Check that all parameters are included in encryption (exact order: id&password&action&langid&currencycode&amt&responseURL&errorURL&trackid&udf1-udf5)
+3. Ensure no parameters are modified before encryption
+4. Verify encryption matches KPAY specification (AES-128-CBC with PKCS5 padding)
+5. For server callbacks, ensure raw request body is being read correctly from `php://input`
 
 ### Production Credentials Error
 
@@ -874,8 +832,6 @@ Common currency codes:
 
 - **AES-128-CBC encryption** for payment requests (matches official KPAY reference code)
 - **AES-128-CBC decryption** for server-to-server callbacks
-- **Error URL validation** - Ensures errorURL is always included (prevents IPAY0100001 error)
-- **Resource key management** - Default test key in service, production validation
 - CSRF protection enabled (response routes are exempt)
 - Resource key never exposed in frontend
 - All payment data validated before processing
@@ -883,8 +839,6 @@ Common currency codes:
 - Race condition prevention for duplicate track IDs
 - Parameter ordering matches KPAY K-064 Integration Manual exactly
 - Secure handling of encrypted server callbacks (GetHandlerResponse.php pattern)
-- Encryption error handling with proper exceptions
-- Production credential validation
 
 ## License
 
@@ -899,8 +853,6 @@ This package is built to match the official KPAY reference code exactly:
 - ✅ AES-128-CBC encryption with PKCS5 padding
 - ✅ URL format: `baseUrl?param=paymentInit&trandata=ENCRYPTED_DATA&tranportalId=ID&responseURL=URL&errorURL=URL`
 - ✅ Language codes: USA (English) or AR (Arabic)
-- ✅ **Error URL included** in both encrypted parameters and trandata (fixes IPAY0100001 error)
-- ✅ Resource key validation (default test key in test mode, required in production)
 
 ### Server Callback (GetHandlerResponse.php)
 - ✅ Reads raw request body from `php://input`
@@ -908,19 +860,11 @@ This package is built to match the official KPAY reference code exactly:
 - ✅ AES-128-CBC decryption with PKCS5 unpadding
 - ✅ Returns `REDIRECT=URL?DECRYPTED_DATA` format
 - ✅ Handles both encrypted callbacks and user redirects
-- ✅ Error handling for decryption failures
 
 ### User Redirect (result.php)
 - ✅ Processes GET parameters from KPAY redirect
 - ✅ Validates and updates payment records
 - ✅ Handles all response fields: result, trackid, paymentid, ref, tranid, amount, error, postdate, auth, udf1-5
-
-### Production-Ready Features
-- ✅ **Error URL validation** - Ensures errorURL is never empty
-- ✅ **Resource key management** - Automatic test key, production validation
-- ✅ **Encryption error handling** - Proper exceptions with clear messages
-- ✅ **Comprehensive logging** - Debug information without exposing sensitive data
-- ✅ **Parameter validation** - All required fields validated before encryption
 
 All encryption/decryption methods match the official KPAY reference code line-by-line.
 
@@ -936,16 +880,14 @@ For issues and questions:
 
 ### Version 2.1.0 (Latest)
 
-**🔒 Major Updates:**
+**Major Updates:**
 - ✅ **AES-128-CBC encryption** implementation (replaces SHA256 hash - matches official KPAY reference code)
 - ✅ **Exact parameter ordering** as per SendPerformREQuest.php: `id&password&action&langid&currencycode&amt&responseURL&errorURL&trackid&udf1-udf5`
 - ✅ **Server-to-server callback handling** matching GetHandlerResponse.php pattern
 - ✅ **URL format** matches KPAY reference: `?param=paymentInit&trandata=ENCRYPTED&tranportalId=ID&responseURL=URL&errorURL=URL`
 - ✅ **Language code normalization** (USA/AR instead of EN/AR per KPAY requirements)
-- ✅ **Error URL validation** - Fixed "IPAY0100001-Missing error url" error
-- ✅ **Resource key management** - Default test key in service, production validation
 
-**✨ New Features:**
+**New Features:**
 - ✅ `generatePaymentRedirectUrl()` method for API/mobile apps
 - ✅ Auto-managed URLs based on `KPAY_TEST_MODE`
 - ✅ Automatic response URL generation from `APP_URL`
@@ -955,13 +897,7 @@ For issues and questions:
 - ✅ Service methods: `getPaymentFormData()`, `getBaseUrl()`
 - ✅ Enhanced error handling and logging
 
-**🐛 Bug Fixes:**
-- ✅ Fixed "Missing error url" error (IPAY0100001) - errorURL now properly included
-- ✅ Resource key handling moved to service (not in config)
-- ✅ Proper URL encoding for errorURL in trandata
-- ✅ Encryption error handling with clear exceptions
-
-**📈 Improvements:**
+**Improvements:**
 - Simplified environment variables (only `KPAY_TEST_MODE` + `APP_URL` required)
 - Better error messages and validation
 - Improved redirect route with proper error handling

@@ -39,17 +39,10 @@ class KPayServiceProvider extends ServiceProvider
                 }
             }
             
-            // Get resource key with fallback to default test key
-            $resourceKey = $config['resource_key'] ?? '';
-            if (empty($resourceKey) && $testMode) {
-                // Default 16-byte test key for encryption (KNET test environment doesn't validate it)
-                $resourceKey = 'TEST_KEY_16_BYTE'; // Exactly 16 bytes
-            }
-            
             return new KPayService(
                 $config['tranportal_id'] ?? '',
                 $config['tranportal_password'] ?? '',
-                $resourceKey,
+                $config['resource_key'] ?? '',
                 $config['base_url'] ?? '', // Empty = auto-detect based on test_mode
                 $testMode,
                 $responseUrl,

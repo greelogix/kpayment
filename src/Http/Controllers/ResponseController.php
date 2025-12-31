@@ -173,39 +173,15 @@ class ResponseController extends Controller
     }
 
     /**
-     * Decrypt encrypted data using AES-128-CBC (as per GetHandlerResponse.php line 46-53)
-     * 
-     * @param string $code The encrypted hex string
-     * @param string $key The decryption key (must be 16 bytes for AES-128-CBC)
-     * @return string Decrypted plain text
-     * @throws \Exception If decryption fails
+     * Decrypt encrypted data using AES-128-CBC (as per GetHandlerResponse.php)
      */
     protected function decrypt(string $code, string $key): string
     {
-        if (empty($key)) {
-            throw new \Exception('Decryption key cannot be empty');
-        }
-        
-        // Convert hex string to byte array (as per GetHandlerResponse.php line 47, 55-58)
         $code = $this->hex2ByteArray(trim($code));
-        
-        // Convert byte array to string (as per GetHandlerResponse.php line 48, 61-64)
         $code = $this->byteArray2String($code);
-        
-        // Set IV to key (as per GetHandlerResponse.php line 49)
         $iv = $key;
-        
-        // Base64 encode (as per GetHandlerResponse.php line 50)
         $code = base64_encode($code);
-        
-        // Decrypt (as per GetHandlerResponse.php line 51)
         $decrypted = openssl_decrypt($code, 'AES-128-CBC', $key, OPENSSL_ZERO_PADDING, $iv);
-        
-        if ($decrypted === false) {
-            throw new \Exception('AES decryption failed: ' . openssl_error_string());
-        }
-        
-        // Remove PKCS5 padding (as per GetHandlerResponse.php line 52, 67-76)
         return $this->pkcs5_unpad($decrypted);
     }
 

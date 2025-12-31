@@ -1,5 +1,14 @@
 <?php
 
+// Get resource key - use default test key if in test mode and key is empty
+$resourceKey = env('KPAY_RESOURCE_KEY', '');
+$testMode = env('KPAY_TEST_MODE', true);
+if ($testMode && empty($resourceKey)) {
+    // Default 16-byte test key for encryption (KNET test environment doesn't validate it)
+    // Must be exactly 16 bytes for AES-128-CBC
+    $resourceKey = 'TEST_KEY_16_BYTE'; // Exactly 16 bytes
+}
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -42,16 +51,15 @@ return [
     |
     | Your KNET resource key for payment processing.
     |
-    | IMPORTANT: For TEST MODE, this can be left empty. KNET test environment
-    | does not require credentials for testing. The service will use a default
-    | test key for encryption if empty in test mode.
+    | IMPORTANT: For TEST MODE, if left empty, a default test key will be used
+    | for encryption (KNET test environment does not validate the key).
     |
     | For PRODUCTION, this is REQUIRED and must be provided by your acquiring bank.
     |
     | Configure via .env or config file.
     |
     */
-    'resource_key' => env('KPAY_RESOURCE_KEY', ''),
+    'resource_key' => $resourceKey,
 
     /*
     |--------------------------------------------------------------------------

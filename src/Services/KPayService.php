@@ -39,6 +39,11 @@ class KPayService
     ) {
         $this->tranportalId = $tranportalId;
         $this->tranportalPassword = $tranportalPassword;
+        
+        // Ensure resource key is set (use default test key if empty in test mode)
+        if (empty($resourceKey) && $testMode) {
+            $resourceKey = 'TEST_KEY_16_BYTE'; // Default 16-byte test key
+        }
         $this->resourceKey = $resourceKey;
         $this->testMode = $testMode;
         
@@ -226,27 +231,7 @@ class KPayService
             $language = 'USA';
         }
         
-        // Validate URLs are not empty (critical for KPAY)
-        if (empty($responseUrl)) {
-            throw new KPayException('responseURL cannot be empty. Please set APP_URL in .env or configure KPAY_RESPONSE_URL');
-        }
-        if (empty($errorUrl)) {
-            throw new KPayException('errorURL cannot be empty. Please set APP_URL in .env or configure KPAY_ERROR_URL');
-        }
-
-        // Ensure resource key is available (use default test key if needed)
-        $resourceKey = $this->resourceKey ?? '';
-        if (empty($resourceKey) && $this->testMode) {
-            // Default 16-byte test key for encryption (KNET test environment doesn't validate it)
-            // Must be exactly 16 bytes for AES-128-CBC
-            $resourceKey = 'TEST_KEY_16_BYTE'; // Exactly 16 bytes
-        }
-        
-        if (empty($resourceKey) && !$this->testMode) {
-            throw new KPayException('KPAY_RESOURCE_KEY is required for production mode. Please configure it in .env');
-        }
-
-        // Build parameter string in exact order as per KPAY reference code (SendPerformREQuest.php line 118)
+        // Build parameter string in exact order as per KPAY reference code
         // Order: id&password&action&langid&currencycode&amt&responseURL&errorURL&trackid&udf1&udf2&udf3&udf4&udf5
         $paramString = 'id=' . $tranportalId;
         $paramString .= '&password=' . $tranportalPassword;
@@ -255,7 +240,7 @@ class KPayService
         $paramString .= '&currencycode=' . ($data['currency'] ?? $this->currency);
         $paramString .= '&amt=' . $amount;
         $paramString .= '&responseURL=' . $responseUrl;
-        $paramString .= '&errorURL=' . $errorUrl;  // CRITICAL: errorURL must be included
+        $paramString .= '&errorURL=' . $errorUrl;
         $paramString .= '&trackid=' . $trackId;
 
         // Add UDF fields if provided
@@ -270,21 +255,17 @@ class KPayService
         }
 
         // Encrypt the parameter string using AES-128-CBC (as per KPAY reference code)
-        // Resource key is already validated and set above
-        $encryptedData = $this->encryptAES($paramString, $resourceKey);
+        $encryptedData = $this->encryptAES($paramString, $this->resourceKey ?? '');
 
         // Build trandata parameter as per SendPerformREQuest.php line 129
         // Format: ENCRYPTED_DATA&tranportalId=ID&responseURL=URL&errorURL=URL
-        // Note: URLs must be properly URL encoded in the trandata string
-        $trandata = $encryptedData 
-            . '&tranportalId=' . urlencode($tranportalId) 
-            . '&responseURL=' . urlencode($responseUrl) 
-            . '&errorURL=' . urlencode($errorUrl);
+        // Note: Only encode the encrypted part, keep & characters for URL parameters
+        $trandata = $encryptedData . '&tranportalId=' . urlencode($tranportalId) . '&responseURL=' . urlencode($responseUrl) . '&errorURL=' . urlencode($errorUrl);
 
         // Build final URL as per SendPerformREQuest.php line 139
         // Format: baseUrl?param=paymentInit&trandata=ENCRYPTED&tranportalId=ID&responseURL=URL&errorURL=URL
-        // Note: The entire trandata parameter needs to be URL encoded
-        $finalUrl = $this->baseUrl . '?param=paymentInit&trandata=' . urlencode($trandata);
+        // Note: Only encode the encrypted part of trandata, not the entire string
+        $finalUrl = $this->baseUrl . '?param=paymentInit&trandata=' . $trandata;
 
         // Store original parameters for logging and payment record
         $params = [
@@ -316,10 +297,7 @@ class KPayService
             'response_url' => $responseUrl,
             'error_url' => $errorUrl,
             'test_mode' => $this->testMode,
-            'has_error_url' => !empty($errorUrl),
-            'has_response_url' => !empty($responseUrl),
             'final_url_length' => strlen($finalUrl),
-            'trandata_preview' => substr($trandata, 0, 100) . '...',
         ]);
 
         // Create payment record within transaction for data integrity
@@ -613,40 +591,16 @@ class KPayService
 
     /**
      * Encrypt data using AES-128-CBC (as per KPAY reference code)
-     * Matches the encryption method in SendPerformRequest.php line 144-152
-     * 
-     * @param string $str The string to encrypt
-     * @param string $key The encryption key (must be 16 bytes for AES-128-CBC)
-     * @return string URL-encoded hex string of encrypted data
-     * @throws KPayException If encryption fails
+     * Matches the encryption method in SendPerformRequest.php
      */
     protected function encryptAES(string $str, string $key): string
     {
-        if (empty($key)) {
-            throw new KPayException('Encryption key cannot be empty');
-        }
-        
-        // PKCS5 padding (as per SendPerformRequest.php line 154-158)
         $str = $this->pkcs5_pad($str);
-        
-        // AES-128-CBC encryption (as per SendPerformRequest.php line 146)
         $encrypted = openssl_encrypt($str, 'AES-128-CBC', $key, OPENSSL_ZERO_PADDING, $key);
-        
-        if ($encrypted === false) {
-            $error = openssl_error_string();
-            throw new KPayException('AES encryption failed' . ($error ? ': ' . $error : ''));
-        }
-        
-        // Convert base64 to binary, then to byte array (as per SendPerformRequest.php line 147-148)
         $encrypted = base64_decode($encrypted);
         $encrypted = unpack('C*', $encrypted);
-        
-        // Convert byte array to hex string (as per SendPerformRequest.php line 149-163)
         $encrypted = $this->byteArray2Hex($encrypted);
-        
-        // URL encode (as per SendPerformRequest.php line 150)
         $encrypted = urlencode($encrypted);
-        
         return $encrypted;
     }
 
