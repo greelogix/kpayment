@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Config;
 use Greelogix\KPay\Exceptions\KPayException;
 use Greelogix\KPay\Models\KPayPayment;
 
@@ -147,6 +146,11 @@ class KPayService
         // Get response and error URLs (REQUIRED by KNET)
         $responseUrl = $data['response_url'] ?? $this->responseUrl;
         $errorUrl = $data['error_url'] ?? $this->errorUrl;
+        
+        // If errorURL is not set, use responseURL as fallback (common practice)
+        if (empty($errorUrl)) {
+            $errorUrl = $responseUrl;
+        }
 
         // Validate required URLs
         if (empty($responseUrl)) {
@@ -259,13 +263,44 @@ class KPayService
 
         // Build trandata parameter as per SendPerformREQuest.php line 129
         // Format: ENCRYPTED_DATA&tranportalId=ID&responseURL=URL&errorURL=URL
-        // Note: Only encode the encrypted part, keep & characters for URL parameters
+        // Note: Ensure errorURL is always set (fallback to responseURL if empty)
+        if (empty($errorUrl)) {
+            $errorUrl = $responseUrl;
+            Log::warning('KPay: errorURL was empty, using responseURL as fallback', [
+                'response_url' => $responseUrl,
+            ]);
+        }
+        
+        // Build trandata with properly encoded URL values
         $trandata = $encryptedData . '&tranportalId=' . urlencode($tranportalId) . '&responseURL=' . urlencode($responseUrl) . '&errorURL=' . urlencode($errorUrl);
+
+        // Log trandata structure for debugging (without sensitive data)
+        if (config('app.debug', false)) {
+            Log::debug('KPay: trandata structure', [
+                'encrypted_length' => strlen($encryptedData),
+                'tranportalId' => $tranportalId,
+                'responseURL' => $responseUrl,
+                'errorURL' => $errorUrl,
+                'trandata_length' => strlen($trandata),
+                'trandata_preview' => substr($trandata, 0, 100) . '...',
+            ]);
+        }
 
         // Build final URL as per SendPerformREQuest.php line 139
         // Format: baseUrl?param=paymentInit&trandata=ENCRYPTED&tranportalId=ID&responseURL=URL&errorURL=URL
-        // Note: Only encode the encrypted part of trandata, not the entire string
-        $finalUrl = $this->baseUrl . '?param=paymentInit&trandata=' . $trandata;
+        // IMPORTANT: The entire trandata must be URL-encoded as a single query parameter value
+        // This ensures the & characters inside trandata are properly encoded (%26)
+        // KPAY will URL-decode the trandata parameter and parse the internal parameters
+        $finalUrl = $this->baseUrl . '?param=paymentInit&trandata=' . rawurlencode($trandata);
+        
+        // Log final URL for debugging (truncated)
+        if (config('app.debug', false)) {
+            Log::debug('KPay: Final payment URL', [
+                'base_url' => $this->baseUrl,
+                'url_length' => strlen($finalUrl),
+                'url_preview' => substr($finalUrl, 0, 150) . '...',
+            ]);
+        }
 
         // Store original parameters for logging and payment record
         $params = [
