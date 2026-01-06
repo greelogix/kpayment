@@ -19,7 +19,7 @@ class KPayServiceProvider extends ServiceProvider
 
         $this->app->singleton('kpay', function ($app) {
             $config = $app['config']->get('kpay');
-            $testMode = $config['test_mode'] ?? true;
+            $testMode = filter_var($config['test_mode'] ?? true, FILTER_VALIDATE_BOOLEAN);
             
             // Auto-generate response URLs if not provided
             $responseUrl = $config['response_url'] ?? '';

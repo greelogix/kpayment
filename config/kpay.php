@@ -2,7 +2,7 @@
 
 // Get resource key - use default test key if in test mode and key is empty
 $resourceKey = env('KPAY_RESOURCE_KEY', '');
-$testMode = env('KPAY_TEST_MODE', true);
+$testMode = filter_var(env('KPAY_TEST_MODE', true), FILTER_VALIDATE_BOOLEAN);
 if ($testMode && empty($resourceKey)) {
     // Default 16-byte test key for encryption (KNET test environment doesn't validate it)
     // Must be exactly 16 bytes for AES-128-CBC
@@ -97,7 +97,7 @@ return [
     | - Credentials REQUIRED
     |
     */
-    'test_mode' => env('KPAY_TEST_MODE', true),
+    'test_mode' => filter_var(env('KPAY_TEST_MODE', true), FILTER_VALIDATE_BOOLEAN),
 
     /*
     |--------------------------------------------------------------------------

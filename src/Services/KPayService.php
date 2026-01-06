@@ -110,6 +110,13 @@ class KPayService
 
     public function generatePaymentForm(array $data): array
     {
+        Log::debug('KPay: generatePaymentForm called', [
+            'test_mode' => $this->testMode,
+            'test_mode_type' => gettype($this->testMode),
+            'has_tranportal_id' => !empty($this->tranportalId),
+            'tranportal_id_length' => strlen($this->tranportalId ?? ''),
+        ]);
+        
         if (!$this->testMode) {
             if (empty($this->tranportalId)) {
                 throw new KPayException('KPAY_TRANPORTAL_ID is required for production mode. Please configure it in .env');
@@ -185,6 +192,7 @@ class KPayService
 
         $tranportalId = $this->tranportalId ?? '';
         $tranportalPassword = $this->tranportalPassword ?? '';
+        $resourceKey = $this->resourceKey ?? '';
         
         if ($this->testMode) {
             $placeholderValues = ['your_production_id', 'your_production_password', 'your_production_resource_key', 'YOUR_TRANPORTAL_ID', 'YOUR_TRANPORTAL_PASSWORD', 'YOUR_RESOURCE_KEY'];
@@ -195,7 +203,22 @@ class KPayService
                 $tranportalPassword = '';
             }
             
-            if (empty($tranportalId)) {
+            if (!empty($tranportalId)) {
+                if (empty($resourceKey) || $resourceKey === 'TEST_KEY_16_BYTE') {
+                    Log::warning('KPay: tranportalId provided but using default test resource key', [
+                        'tranportal_id' => substr($tranportalId, 0, 4) . '***',
+                        'resource_key' => 'DEFAULT_TEST_KEY',
+                        'note' => 'If you provided a real tranportal ID, you MUST also provide the matching resource key from your bank. Using default test key with a real tranportal ID will cause KPAY to reject the request.',
+                    ]);
+                }
+                
+                if (empty($tranportalPassword)) {
+                    Log::warning('KPay: tranportalId provided but password is empty', [
+                        'tranportal_id' => substr($tranportalId, 0, 4) . '***',
+                        'note' => 'Some KPAY accounts may require a password even in test mode. Contact your bank for test credentials.',
+                    ]);
+                }
+            } else {
                 $tranportalId = '';
             }
         }
@@ -224,7 +247,7 @@ class KPayService
             }
         }
 
-        $encryptedData = $this->encryptAES($paramString, $this->resourceKey ?? '');
+        $encryptedData = $this->encryptAES($paramString, $resourceKey);
 
         $trandata = $encryptedData . '&tranportalId=' . $tranportalId . '&responseURL=' . $responseUrl . '&errorURL=' . $errorUrl;
 
@@ -257,6 +280,11 @@ class KPayService
             parse_str($urlParts['query'], $queryParams);
         }
         
+        $resourceKeyPreview = !empty($resourceKey) 
+            ? (strlen($resourceKey) > 8 ? substr($resourceKey, 0, 4) . '***' . substr($resourceKey, -4) : '***')
+            : 'EMPTY';
+        $isDefaultTestKey = ($resourceKey === 'TEST_KEY_16_BYTE');
+        
         Log::info('KPay: Payment form generated', [
             'track_id' => $trackId,
             'amount' => $amount,
@@ -270,6 +298,10 @@ class KPayService
             'error_url_in_trandata' => strpos($trandata, 'errorURL=') !== false,
             'tranportal_id' => $tranportalId ? 'SET' : 'EMPTY',
             'tranportal_id_length' => strlen($tranportalId),
+            'tranportal_id_preview' => !empty($tranportalId) ? substr($tranportalId, 0, 4) . '***' : 'EMPTY',
+            'resource_key_preview' => $resourceKeyPreview,
+            'is_default_test_key' => $isDefaultTestKey,
+            'resource_key_length' => strlen($resourceKey),
             'param_string_preview' => substr($paramString, 0, 150) . '...',
             'has_id_in_param' => strpos($paramString, 'id=') !== false,
             'has_tranportal_id_in_trandata' => strpos($trandata, 'tranportalId=') !== false,

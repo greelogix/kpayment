@@ -178,6 +178,67 @@ KPAY_ERROR_URL=https://custom-error-url.com
 
 **Note:** The package automatically generates response URLs from `APP_URL`. Make sure `APP_URL` is set correctly in your `.env` file.
 
+### Step 5.5: Getting KPAY Credentials
+
+#### **For TEST MODE (Development/Testing):**
+
+**You don't need any credentials!** Leave all three fields empty:
+
+```env
+KPAY_TEST_MODE=true
+KPAY_TRANPORTAL_ID=
+KPAY_TRANPORTAL_PASSWORD=
+KPAY_RESOURCE_KEY=
+```
+
+The package will automatically use a default test encryption key. KPAY's test environment doesn't validate credentials, so you can test payments without any credentials from your bank.
+
+#### **For PRODUCTION MODE:**
+
+**You need all three credentials from your bank:**
+
+1. **Tranportal ID** - You already have this
+2. **Tranportal Password** - Contact your bank/KPAY support
+3. **Resource Key** - Contact your bank/KPAY support
+
+#### **Where to Get Credentials:**
+
+**Contact your acquiring bank or KPAY support team.** They will provide you with:
+
+- **Tranportal ID** (also called "Terminal ID" or "Merchant ID")
+- **Tranportal Password** (also called "Terminal Password" or "Merchant Password")
+- **Resource Key** (also called "Terminal Resource Key" or "Encryption Key")
+
+**Important Notes:**
+- All three credentials must match - they are linked together
+- The Resource Key must be exactly **16 bytes** for AES-128-CBC encryption
+- Never share these credentials publicly or commit them to version control
+- For production, you'll get separate credentials (different from test credentials if they provide test ones)
+
+#### **If You Only Have Tranportal ID:**
+
+**For Testing:**
+- Remove the `KPAY_TRANPORTAL_ID` from your `.env` file (leave it empty)
+- Set `KPAY_TEST_MODE=true`
+- The package will work without any credentials
+
+**For Production:**
+- You **must** contact your bank to get the matching Password and Resource Key
+- Using only the Tranportal ID without the matching Password and Resource Key will cause KPAY to reject requests with "InvalidAccess" error
+- All three credentials are required and must match
+
+#### **Common Error: "InvalidAccess"**
+
+If you see this error:
+```
+https://kpaytest.com.kw/kpg/InvalidAccess.htm
+```
+
+This means:
+- You provided a `tranportalId` but the `resourceKey` doesn't match it
+- **Solution for Testing:** Remove `KPAY_TRANPORTAL_ID` from `.env` (leave it empty)
+- **Solution for Production:** Contact your bank to get the matching Password and Resource Key
+
 ### Step 6: Clear Cache
 
 ```bash
